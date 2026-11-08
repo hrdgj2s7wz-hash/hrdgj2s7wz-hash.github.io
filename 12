@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#07141d" />
+  <title>Пиратский корабль — приключение начинается</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f8edcf;
+      --muted: #d3c7a8;
+      --gold: #f2b84b;
+      --sea: #07141d;
+      --panel: rgba(8, 22, 30, .88);
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; color: var(--ink); background: var(--sea); font-family: Georgia, "Times New Roman", serif; }
+    button { font: inherit; }
+
+    .screen {
+      min-height: 100vh; position: relative; overflow: hidden; isolation: isolate;
+      background: linear-gradient(180deg, rgba(6,16,25,.15), rgba(6,16,25,.18) 42%, #07141d 100%),
+        radial-gradient(ellipse at 50% 42%, rgba(238,177,82,.2), transparent 40%),
+        linear-gradient(180deg, #102b3b 0%, #274653 48%, #102d39 49%, #07141d 100%);
+    }
+    .screen::before, .screen::after { content: ""; position: absolute; z-index: -1; left: -10%; width: 120%; pointer-events: none; }
+    .screen::before { height: 23%; bottom: 0; opacity: .56; background: repeating-radial-gradient(ellipse at 50% 100%, transparent 0 42px, rgba(77,151,164,.22) 44px 47px, transparent 49px 76px); }
+    .screen::after { height: 25%; bottom: -16%; opacity: .6; background: radial-gradient(ellipse at 50% 0, rgba(22,76,91,.9), transparent 68%); }
+
+    .intro { min-height: 100vh; display: grid; place-items: center; padding: 32px 20px; text-align: center; }
+    .intro-content { width: min(900px, 100%); position: relative; z-index: 1; padding-top: 20px; }
+    .eyebrow { margin: 0 0 12px; color: #ffe2a0; font: 700 .8rem/1.4 Arial,sans-serif; letter-spacing: .28em; text-transform: uppercase; text-shadow: 0 2px 8px #000; }
+    h1 { margin: 0; color: #fff3d3; font-size: clamp(2.7rem, 8vw, 6.2rem); line-height: .95; text-shadow: 0 4px 0 #58361f, 0 8px 24px rgba(0,0,0,.8); }
+    .intro-copy { max-width: 580px; margin: 18px auto 0; color: #f4e7c7; font: 1.08rem/1.6 Arial,sans-serif; text-shadow: 0 2px 7px #000; }
+    .ship-wrap { width: min(760px, 100%); margin: -4px auto -24px; filter: drop-shadow(0 22px 18px rgba(0,0,0,.55)); animation: bob 4s ease-in-out infinite; }
+    .ship-wrap svg { display: block; width: 100%; height: auto; }
+    @keyframes bob { 0%,100% { transform: translateY(0) rotate(-.3deg); } 50% { transform: translateY(8px) rotate(.3deg); } }
+
+    .button {
+      border: 1px solid #ffe19a; border-radius: 999px; padding: 15px 28px; color: #291a0d;
+      background: linear-gradient(#ffd77b, #d89432); box-shadow: 0 5px 0 #74431e, 0 12px 24px rgba(0,0,0,.38);
+      font: 700 1rem/1.2 Arial,sans-serif; cursor: pointer; transition: transform .15s ease, filter .15s ease;
+    }
+    .button:hover { transform: translateY(-2px); filter: brightness(1.08); }
+    .button:active { transform: translateY(2px); box-shadow: 0 2px 0 #74431e; }
+    .button:focus-visible { outline: 3px solid white; outline-offset: 4px; }
+
+    .game-screen { display: none; min-height: 100vh; padding: 24px 16px 40px; background: linear-gradient(rgba(4,14,21,.58), rgba(4,14,21,.84)), radial-gradient(ellipse at 50% 0, #315463 0%, #102531 62%, #07141d 100%); }
+    .game-screen.active { display: block; }
+    .intro.hidden { display: none; }
+    .game { width: min(820px, 100%); margin: 0 auto; border: 1px solid rgba(255,224,160,.32); border-radius: 18px; overflow: hidden; background: var(--panel); box-shadow: 0 20px 55px rgba(0,0,0,.5); backdrop-filter: blur(8px); }
+    .game-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,.1); background: linear-gradient(120deg, rgba(112,63,31,.75), rgba(25,45,50,.8)); }
+    .game-header h2 { margin: 0; color: #ffe4a8; font-size: clamp(1.4rem, 5vw, 2.2rem); }
+    .content { padding: clamp(18px, 4vw, 30px); }
+    .story { min-height: 170px; padding: 20px; border: 1px solid rgba(255,226,160,.15); border-radius: 12px; background: rgba(255,246,220,.06); color: var(--ink); font: 1.02rem/1.75 Arial,sans-serif; }
+    .story h3 { margin: 0 0 10px; color: var(--gold); font: 700 1.35rem Georgia,serif; }
+    .story p { margin: 0; }
+    .inventory { margin-top: 16px; padding: 14px 16px; border: 1px solid rgba(122,200,145,.3); border-radius: 12px; background: rgba(75,135,87,.1); font: .95rem/1.6 Arial,sans-serif; }
+    .inventory h3 { margin: 0 0 8px; color: #a7e5a5; font: 700 1rem Arial,sans-serif; }
+    .inventory-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .inventory-list li { padding: 5px 10px; border: 1px solid rgba(167,229,165,.32); border-radius: 999px; color: var(--muted); background: rgba(122,200,145,.1); }
+    .inventory-list li.item-added { animation: itemPop .55s cubic-bezier(.2,.8,.25,1.3) both; }
+    @keyframes itemPop { 0% { opacity: 0; transform: scale(.55) translateY(12px); } 65% { opacity: 1; transform: scale(1.12) translateY(-2px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+    .choices { display: grid; gap: 11px; margin-top: 20px; }
+    .choices .button { width: 100%; border-radius: 10px; text-align: left; }
+    .secondary { padding: 10px 14px; color: var(--ink); background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.3); box-shadow: none; font-size: .85rem; white-space: nowrap; }
+    .secondary:hover { background: rgba(255,255,255,.17); }
+    .restart { margin-top: 20px; }
+    .hidden { display: none !important; }
+
+    @media (max-width: 520px) {
+      .intro { padding-inline: 16px; }
+      .ship-wrap { margin-top: 10px; margin-bottom: -2px; }
+      .intro-copy { font-size: 1rem; }
+      .game-screen { padding-inline: 10px; }
+      .game-header { padding: 16px 18px; }
+      .secondary { padding: 9px 10px; font-size: .78rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *,*::before,*::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section id="intro" class="screen intro" aria-label="Главная страница игры">
+      <div class="intro-content">
+        <p class="eyebrow">Текстовое приключение</p>
+        <h1>Пиратский<br>корабль</h1>
+        <p class="intro-copy">Туман скрывает старый корабль, а его трюм хранит тайну. Поднимайся на борт, собирай предметы и найди сокровище!</p>
+        <div class="ship-wrap" aria-hidden="true">
+          <svg viewBox="0 0 760 390" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="hull" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#8d552b"/><stop offset="1" stop-color="#321d18"/></linearGradient>
+              <linearGradient id="sail" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#f3e5bf"/><stop offset="1" stop-color="#ad9873"/></linearGradient>
+              <linearGradient id="water" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#397383" stop-opacity=".8"/><stop offset="1" stop-color="#09212c" stop-opacity=".15"/></linearGradient>
+            </defs>
+            <circle cx="578" cy="86" r="37" fill="#ffe6ad" opacity=".8"/>
+            <path d="M50 269 Q175 246 300 269 T550 265 T760 270 V390 H0Z" fill="url(#water)"/>
+            <path d="M32 307 Q112 291 192 307 T352 307 T512 307 T672 307 T832 307" fill="none" stroke="#8dc0bf" stroke-opacity=".45" stroke-width="4"/>
+            <path d="M382 60 L382 288 M270 128 L270 276 M495 143 L495 276" stroke="#39251a" stroke-width="12" stroke-linecap="round"/>
+            <path d="M220 137 L445 137 M320 75 L446 75 M442 157 L544 157" stroke="#5d3925" stroke-width="8" stroke-linecap="round"/>
+            <path d="M381 77 L281 128 L381 128Z" fill="url(#sail)" stroke="#75634c" stroke-width="3"/>
+            <path d="M390 84 L438 84 L438 126 L390 126Z" fill="url(#sail)" stroke="#75634c" stroke-width="3"/>
+            <path d="M270 143 L224 183 L270 183Z" fill="url(#sail)" stroke="#75634c" stroke-width="3"/>
+            <path d="M279 145 L327 145 L327 183 L279 183Z" fill="url(#sail)" stroke="#75634c" stroke-width="3"/>
+            <path d="M495 166 L453 204 L495 204Z" fill="url(#sail)" stroke="#75634c" stroke-width="3"/>
+            <path d="M504 166 L546 166 L546 204 L504 204Z" fill="url(#sail)" stroke="#75634c" stroke-width="3"/>
+            <path d="M386 60 Q425 47 457 62 L443 88 Q414 75 386 85Z" fill="#171717"/>
+            <circle cx="420" cy="68" r="8" fill="#eee1bf"/><path d="M407 58 L433 78 M433 58 L407 78" stroke="#eee1bf" stroke-width="3"/>
+            <path d="M112 273 Q260 287 384 279 Q530 287 660 255 L616 320 Q390 355 183 319Z" fill="url(#hull)" stroke="#281914" stroke-width="8"/>
+            <path d="M140 283 Q367 307 636 270" fill="none" stroke="#d09a54" stroke-width="5" opacity=".8"/>
+            <path d="M173 298 L600 290 M196 311 L577 304" stroke="#c18a4d" stroke-opacity=".42" stroke-width="3"/>
+            <path d="M580 267 L666 250 L628 278Z" fill="#4c2b1d" stroke="#281914" stroke-width="5"/>
+            <g fill="#f2bd55" stroke="#201512" stroke-width="5"><circle cx="270" cy="302" r="8"/><circle cx="321" cy="306" r="8"/><circle cx="372" cy="308" r="8"/><circle cx="423" cy="306" r="8"/><circle cx="474" cy="301" r="8"/></g>
+            <path d="M84 350 Q160 338 238 350 M500 351 Q575 337 652 349" fill="none" stroke="#74a9aa" stroke-opacity=".55" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <button id="startBtn" class="button">Начать</button>
+      </div>
+    </section>
+
+    <section id="gameScreen" class="game-screen" aria-label="Игра">
+      <div class="game">
+        <header class="game-header">
+          <h2>Пиратский корабль</h2>
+          <button id="soundBtn" class="button secondary" type="button" aria-pressed="true">🔊 Волны: вкл.</button>
+        </header>
+        <div class="content">
+          <div id="story" class="story" aria-live="polite"></div>
+          <aside class="inventory" aria-label="Инвентарь">
+            <h3>🎒 Инвентарь</h3>
+            <ul id="inventoryList" class="inventory-list" aria-live="polite"><li>Пока пусто</li></ul>
+          </aside>
+          <div id="choices" class="choices"></div>
+          <button id="restartBtn" class="button secondary restart hidden" type="button">Начать заново</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const state = { scene: "deck", inventory: [] };
+    let audioContext = null;
+    let ambientNodes = [];
+    let soundEnabled = true;
+
+    const scenes = {
+      deck: { title: "Палуба корабля", text: "Ты стоишь на мокрой палубе древнего пиратского корабля. Ветер пахнет солью и старым деревом. Вокруг бьётся волна, а туман наползает на мачты. Вдалеке видны капитанская каюта, трюм и нос корабля.", choices: [
+        { text: "Осмотреть капитанскую каюту", next: "cabin" }, { text: "Спуститься в трюм", next: "hold" }, { text: "Подняться на нос корабля", next: "bow" }
+      ] },
+      cabin: { title: "Капитанская каюта", text: "В каюте сыро и тихо. На столе лежит старый компас, а у сундука на полу поблёскивает металлический ключ.", choices: [
+        { text: "Взять компас", next: "cabin", item: "Компас" }, { text: "Взять ключ", next: "cabin", item: "Ключ" }, { text: "Вернуться на палубу", next: "deck" }
+      ] },
+      hold: { title: "Трюм", text: "В трюме пахнет плесенью и старым деревом. На полу лежит карта, завёрнутая в промокшую ткань. В дальнем углу стоит сундук с замком.", choices: [
+        { text: "Поднять карту", next: "hold", item: "Карта сокровищ" }, { text: "Осмотреть сундук", next: "chest" }, { text: "Вернуться на палубу", next: "deck" }
+      ] },
+      bow: { title: "Нос корабля", text: "На носу корабля лежит золотой знак. На борту вырезана подсказка: «Сокровище ждёт того, кто найдёт ключ».", choices: [
+        { text: "Забрать золотой знак", next: "bow", item: "Золотой знак" }, { text: "Вернуться на палубу", next: "deck" }
+      ] },
+      chest: { title: "Сундук капитана", text: "Сундук заперт. На тяжёлом замке видна царапина в форме старого ключа.", choices: [
+        { text: "Открыть сундук ключом", next: "win", requires: "Ключ", denyText: "Замок не поддаётся. Поищи ключ в капитанской каюте." }, { text: "Вернуться в трюм", next: "hold" }
+      ] },
+      win: { title: "Сокровище найдено!", text: "Ключ поворачивается в замке. В сундуке лежат золотые монеты, драгоценности и письмо капитана: «Теперь ты — настоящий пират!» Ты нашёл сокровище и завершил приключение!", choices: [] }
+    };
+
+    // Создаём мягкий шум прибоя из Web Audio API — никаких внешних аудиофайлов не требуется.
+    async function startWaves() {
+      if (!soundEnabled) return;
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        if (!audioContext) audioContext = new AudioContextClass();
+        if (audioContext.state === "suspended") await audioContext.resume();
+        if (ambientNodes.length) return;
+
+        const buffer = audioContext.createBuffer(1, audioContext.sampleRate * 3, audioContext.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (0.65 + 0.35 * Math.random());
+
+        const noise = audioContext.createBufferSource();
+        noise.buffer = buffer;
+        noise.loop = true;
+        const lowPass = audioContext.createBiquadFilter();
+        lowPass.type = "lowpass";
+        lowPass.frequency.value = 420;
+        lowPass.Q.value = 0.7;
+        const volume = audioContext.createGain();
+        volume.gain.value = 0.11;
+        const swell = audioContext.createOscillator();
+        const swellDepth = audioContext.createGain();
+        swell.type = "sine";
+        swell.frequency.value = 0.12;
+        swellDepth.gain.value = 0.055;
+        swell.connect(swellDepth);
+        swellDepth.connect(volume.gain);
+        noise.connect(lowPass);
+        lowPass.connect(volume);
+        volume.connect(audioContext.destination);
+        noise.start();
+        swell.start();
+        ambientNodes = [noise, swell, lowPass, volume, swellDepth];
+      } catch (error) {
+        // Если браузер не поддерживает звук, игра всё равно работает.
+        console.warn("Не удалось запустить звук волн:", error);
+      }
+    }
+
+    function stopWaves() {
+      for (const node of ambientNodes) {
+        try { if (typeof node.stop === "function") node.stop(); } catch (_) {}
+        try { node.disconnect(); } catch (_) {}
+      }
+      ambientNodes = [];
+    }
+
+    function updateSoundButton() {
+      const button = document.getElementById("soundBtn");
+      button.textContent = soundEnabled ? "🔊 Волны: вкл." : "🔇 Волны: выкл.";
+      button.setAttribute("aria-pressed", String(soundEnabled));
+      button.setAttribute("aria-label", soundEnabled ? "Выключить шум волн" : "Включить шум волн");
+    }
+
+    function renderInventory(addedItem = null) {
+      const list = document.getElementById("inventoryList");
+      list.replaceChildren();
+      if (state.inventory.length === 0) {
+        const empty = document.createElement("li");
+        empty.textContent = "Пока пусто";
+        list.appendChild(empty);
+        return;
+      }
+      state.inventory.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        if (item === addedItem) li.classList.add("item-added");
+        list.appendChild(li);
+      });
+    }
+
+    function renderScene() {
+      const current = scenes[state.scene];
+      document.getElementById("story").innerHTML = `<h3>${current.title}</h3><p>${current.text}</p>`;
+      const choices = document.getElementById("choices");
+      choices.replaceChildren();
+      document.getElementById("restartBtn").classList.toggle("hidden", current.choices.length > 0);
+      current.choices.forEach(choice => {
+        const button = document.createElement("button");
+        button.className = "button";
+        button.textContent = choice.text;
+        button.addEventListener("click", () => {
+          if (choice.requires && !state.inventory.includes(choice.requires)) {
+            window.alert(choice.denyText || "Тебе не хватает нужного предмета.");
+            return;
+          }
+          let addedItem = null;
+          if (choice.item && !state.inventory.includes(choice.item)) {
+            state.inventory.push(choice.item);
+            addedItem = choice.item;
+          }
+          renderInventory(addedItem);
+          state.scene = choice.next;
+          renderScene();
+        });
+        choices.appendChild(button);
+      });
+    }
+
+    function restartGame() {
+      state.scene = "deck";
+      state.inventory = [];
+      renderInventory();
+      renderScene();
+    }
+
+    document.getElementById("startBtn").addEventListener("click", async () => {
+      document.getElementById("intro").classList.add("hidden");
+      document.getElementById("gameScreen").classList.add("active");
+      renderScene();
+      await startWaves();
+      updateSoundButton();
+    });
+    document.getElementById("soundBtn").addEventListener("click", async () => {
+      soundEnabled = !soundEnabled;
+      if (soundEnabled) await startWaves();
+      else stopWaves();
+      updateSoundButton();
+    });
+    document.getElementById("restartBtn").addEventListener("click", restartGame);
+    updateSoundButton();
+  </script>
+</body>
+</html>
